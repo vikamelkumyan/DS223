@@ -25,6 +25,8 @@ Technologically, Matic is an improved follower of Roomba. While Roomba mainly ha
 
 This progression mirrors typical innovation–imitation dynamics in the Bass Model, where Matic’s market diffusion is likely to follow Roomba’s established adoption curve but at an accelerated pace. With over two decades of Roomba market data available, it serves as an ideal look-alike innovation for estimating Matic’s diffusion parameters and forecasting its future market impact.
 
+![Actual Yearly and Cumulative Data](/Users/macbook/Documents/AUA/DS223/HW1/img/iRobot_annual_and_cumulative_data.png)
+
 ## 3. Historical Data
 
 **Link:** https://www.statista.com/statistics/731469/irobot-revenue-worldwide/  
@@ -38,7 +40,7 @@ Since there was no publicly available full historical data on sales volume, I wi
 
 ## 4. Bass Model Parameters Estimation
 
-The Bass model parameters — **coefficient of innovation (p)**, **coefficient of imitation (q)**, and **market potential (M)** - were estimated using worldwide yearly shipments of iRobot vacuums from 2012 to 2023. Yearly shipments were treated as **new adopters** (\( f(t) \)), and the model was implemented in Python to simulate both yearly and cumulative adoption. `curve_fit` from SciPy was used to determine the values of p, q, and M that best fit the data.  
+The Bass model parameters , **coefficient of innovation (p)**, **coefficient of imitation (q)**, and **market potential (M)** , were estimated using worldwide yearly shipments of iRobot vacuums from 2012 to 2023. Yearly shipments were treated as **new adopters** (\( f(t) \)), and the model was implemented in Python to simulate both yearly and cumulative adoption. `curve_fit` from SciPy was used to determine the values of p, q, and M that best fit the data.  
 
 - Coefficient of innovation (p): *[0.0201]*  
 

@@ -157,8 +157,8 @@ plt.tight_layout()
 
 plt.savefig(os.path.join(img_folder, 'robot_ownership_by_country.png'), dpi=300, bbox_inches='tight')
 
-plt.show()
-# # --- 7: Create adopters DataFrame ---
+plt.close()
+## 7: Create adopters DataFrame ---
 adopters_df = pd.DataFrame({
     'year': shipments_df['year'],
     'estimated_new_adopters': S_fit,   # f(t)
@@ -205,4 +205,4 @@ plt.grid(True)
 plt.tight_layout()
 
 plt.savefig(os.path.join(img_folder, 'forecast_adoption.png'), dpi=300, bbox_inches='tight')
-
+plt.close()

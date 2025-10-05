@@ -34,7 +34,7 @@ The project demonstrates:
   - `report_source.md`: Source markdown file to generate the report.  
 
 - **/** (root directory): Holds the code files for the project.
-  - `script1.py(r)`: Innovation Diffusion Analysis codes.  
-  - `helper_functions.py(r)`: Bass model functions for parameter estimation and simulation. 
+  - `script1.py`: Innovation Diffusion Analysis codes.  
+  - `helper_functions.py`: Bass model functions for parameter estimation and simulation. 
 
 
