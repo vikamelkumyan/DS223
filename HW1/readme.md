@@ -17,6 +17,7 @@ The project demonstrates:
 ## Project Directory Structure
 
 - **img/**: This directory contains all the images used in the project.
+    - `iRobot_annual_and_cumulative_data.png`: Actual yearly and cumulative sales numbers for iRobot. 
     - `shipments_bass_fit.png`: Comparison of actual yearly shipments with the Bass model fit.  
     - `predicted_adoption_forecast.png`: Predicted yearly and cumulative adoption of iRobot vacuums over 30 years.  
     - `forecast_adoption.png`: Forecasted adoption (yearly and cumulative) for 5 years beyond the historical data.  
@@ -33,7 +34,7 @@ The project demonstrates:
   - `report_source.md`: Source markdown file to generate the report.  
 
 - **/** (root directory): Holds the code files for the project.
-  - `script1.py(r)`: Description of what the script does.  
-  - `helper_functions.py(r)`: A collection of helper functions used in the project.  
+  - `script1.py(r)`: Innovation Diffusion Analysis codes.  
+  - `helper_functions.py(r)`: Bass model functions for parameter estimation and simulation. 
 
 

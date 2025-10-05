@@ -19,15 +19,10 @@ merged = pd.merge(
     on='year'
 )
 fixed_avg_price = (merged['revenue'] / merged['shipments']).mean()
-
 missing_years = [2012, 2013, 2019, 2020, 2021, 2022, 2023]
-
 rev_missing = revenue_df[revenue_df['year'].isin(missing_years)].copy()
-
 rev_missing['shipments'] = rev_missing['revenue'] / fixed_avg_price
-
 shipments_df = pd.concat([shipments_df, rev_missing[['year', 'shipments']]], ignore_index=True)
-
 shipments_df = shipments_df.sort_values('year').reset_index(drop=True)
 shipments_df['cum_shipments'] = shipments_df['shipments'].cumsum()
 
@@ -59,23 +54,14 @@ plt.savefig(os.path.join(img_folder, 'iRobot_annual_and_cumulative_data.png'), d
 plt.close()
 
 ## 4: Estimating Bass model parameters
+
 # --- Fit Bass model ---
 t = np.arange(len(shipments_df))
 y = shipments_df['shipments'].values
 p0, q0, M0 = 0.03, 0.38, y.sum()*2  # initial guesses
-print('hello')
-print(y.sum()*2)
-print('------------')
-params, _ = curve_fit(bass_model, t, y, p0=[p0, q0, M0], bounds=(0, [1,1,1e7]))
+params, _ = curve_fit(bass_model, t, y, p0=[p0, q0, M0])
 p_est, q_est, M_est = params
 print(f"Estimated p: {p_est:.4f}, q: {q_est:.4f}, M: {M_est:.0f}")
-
-####
-##
-#
-#
-##
-
 
 S_fit, N_fit = bass_model_sim(p_est, q_est, M_est, len(shipments_df))
 
@@ -103,19 +89,17 @@ plt.legend()
 plt.grid(True)
 
 plt.tight_layout()
-
 plt.savefig(os.path.join(img_folder, 'shipments_bass_fit.png'), dpi=300, bbox_inches='tight')
+plt.close()
 
-
+## 5: Predicting future adoption
 # simulate adoption for 30 years from 2012
 n_years = 30
 S_pred, N_pred = bass_model_sim(p_est, q_est, M_est, n_years)
 
-# create year index
 start_year = 2012
 years_pred = list(range(start_year, start_year + n_years))
 
-# create DataFrame with predicted diffusion
 diffusion_df = pd.DataFrame({
     'year': years_pred,
     'predicted_new_adopters': S_pred,   # f(t)
@@ -123,7 +107,6 @@ diffusion_df = pd.DataFrame({
 })
 
 print(diffusion_df.head(10))
-
 
 plt.figure(figsize=(12,6))
 
@@ -148,6 +131,7 @@ plt.grid(True)
 plt.tight_layout()
 
 plt.savefig(os.path.join(img_folder, 'predicted_adoption_forecast.png'), dpi=300, bbox_inches='tight')
+plt.close()
 
 ## 6: Global or country-specific
 
@@ -158,7 +142,7 @@ ownership_df_sorted = ownership_df.sort_values('rate', ascending=True)
 plt.figure(figsize=(10,6))
 
 # Horizontal bar plot
-plt.barh(ownership_df_sorted['country'], ownership_df_sorted['rate'], color='skyblue')
+plt.barh(ownership_df_sorted['country'], ownership_df_sorted['rate'])
 
 # Add numbers at the end of bars
 for index, value in enumerate(ownership_df_sorted['rate']):
