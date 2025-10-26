@@ -81,7 +81,7 @@ class Visualization():
         axes[1, 1].grid(True)
         
         plt.tight_layout()
-        plt.savefig('bandit_performance.png', dpi=300, bbox_inches='tight')
+        plt.savefig('Visualisations/bandit_performance.png', dpi=300, bbox_inches='tight')
         logger.info("Plot 1 saved as 'bandit_performance.png'")
         plt.show()
     
@@ -111,7 +111,7 @@ class Visualization():
         axes[1].grid(True)
         
         plt.tight_layout()
-        plt.savefig('algorithms_comparison.png', dpi=300, bbox_inches='tight')
+        plt.savefig('Visualisations/algorithms_comparison.png', dpi=300, bbox_inches='tight')
         logger.info("Plot 2 saved as 'algorithms_comparison.png'")
         plt.show()
 
@@ -258,7 +258,7 @@ class EpsilonGreedy(Bandit):
             'Reward': self.rewards,
             'Algorithm': 'EpsilonGreedy'
         })
-        df.to_csv('epsilon_greedy_results.csv', index=False)
+        df.to_csv('Datasets/epsilon_greedy_results.csv', index=False)
         logger.info("Results saved to 'epsilon_greedy_results.csv'")
 
 #--------------------------------------#
@@ -392,7 +392,7 @@ class ThompsonSampling(Bandit):
             'Reward': rewards,
             'Algorithm': 'ThompsonSampling'
         })
-        df.to_csv('thompson_sampling_results.csv', index=False)
+        df.to_csv('Datasets/thompson_sampling_results.csv', index=False)
         logger.info("Results saved to 'thompson_sampling_results.csv'")
         
         # Store for visualization
@@ -411,10 +411,10 @@ def comparison(eg_bandit, ts_bandit):
     """
     logger.info("Generating comparison visualizations...")
     
-    df_eg = pd.read_csv('epsilon_greedy_results.csv')
-    df_ts = pd.read_csv('thompson_sampling_results.csv')
+    df_eg = pd.read_csv('Datasets/epsilon_greedy_results.csv')
+    df_ts = pd.read_csv('Datasets/thompson_sampling_results.csv')
     df_combined = pd.concat([df_eg, df_ts], ignore_index=True)
-    df_combined.to_csv('combined_results.csv', index=False)
+    df_combined.to_csv('Datasets/combined_results.csv', index=False)
     logger.info("Combined results saved to 'combined_results.csv'")
     
     viz = Visualization(eg_bandit, ts_bandit)
