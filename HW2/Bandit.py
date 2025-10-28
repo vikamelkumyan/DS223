@@ -424,7 +424,7 @@ def comparison(eg_bandits, ts_bandits, eg_rewards, ts_rewards):
     logger.info(f"{'='*60}")
 
 if __name__=='__main__':
-    np.random.seed(42)
+    np.random.seed(1)
     
     logger.info("\n" + "="*60)
     logger.info("MULTI-ARMED BANDIT EXPERIMENT")
