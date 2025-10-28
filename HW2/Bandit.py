@@ -4,10 +4,16 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+
+# Create necessary directories
+os.makedirs('Visualisations', exist_ok=True)
+os.makedirs('Datasets', exist_ok=True)
 
 class Bandit(ABC):
-    """ """
-    ##==== DO NOT REMOVE ANYTHING FROM THIS CLASS ====##
+    """
+    Abstract base class for multi-armed bandit algorithms.
+    """
     @abstractmethod
     def __init__(self, p):
         pass
@@ -18,147 +24,173 @@ class Bandit(ABC):
     
     @abstractmethod
     def pull(self):
-        """ """
         pass
     
     @abstractmethod
     def update(self):
-        """ """
         pass
     
     @abstractmethod
     def experiment(self):
-        """ """
         pass
     
     @abstractmethod
     def report(self):
-        """ """
-        # store data in csv
-        # print average reward (use f strings to make it informative)
-        # print average regret (use f strings to make it informative)
         pass
 
 #--------------------------------------#
 class Visualization():
-    """ """
-    def __init__(self, epsilon_greedy, thompson_sampling):
-        self.eg = epsilon_greedy
-        self.ts = thompson_sampling
+    """
+    Visualization class for comparing bandit algorithm performance.
+    """
+    def __init__(self, epsilon_greedy_bandits, thompson_sampling_bandits, eg_rewards, ts_rewards):
+        """
+        Initialize the visualization with bandit results.
+        
+        Args:
+            epsilon_greedy_bandits: List of EpsilonGreedy bandit instances
+            thompson_sampling_bandits: List of ThompsonSampling bandit instances
+            eg_rewards: Array of rewards from EG experiment
+            ts_rewards: Array of rewards from TS experiment
+        """
+        self.eg_bandits = epsilon_greedy_bandits
+        self.ts_bandits = thompson_sampling_bandits
+        self.eg_rewards = eg_rewards
+        self.ts_rewards = ts_rewards
+        self.eg_optimal = max([b.m for b in epsilon_greedy_bandits])
+        self.ts_optimal = max([b.true_mean for b in thompson_sampling_bandits])
     
     def plot1(self):
-        """Visualize the performance of each bandit: linear and log"""
-        fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+        """
+        Visualize cumulative rewards for each individual bandit arm in both algorithms.
         
-        # Epsilon-Greedy Linear
-        axes[0, 0].plot(np.cumsum(self.eg.rewards))
-        axes[0, 0].set_title('Epsilon-Greedy: Cumulative Reward (Linear)')
-        axes[0, 0].set_xlabel('Trials')
-        axes[0, 0].set_ylabel('Cumulative Reward')
-        axes[0, 0].grid(True)
+        Creates a 2x2 grid of plots showing:
+        - Top row: Epsilon-Greedy per-arm average rewards (linear and log scale)
+        - Bottom row: Thompson Sampling per-arm average rewards (linear and log scale)
+        """
+        fig, axes = plt.subplots(2, 2, figsize=(16, 10))
         
-        # Epsilon-Greedy Log
-        axes[0, 1].plot(np.cumsum(self.eg.rewards))
-        axes[0, 1].set_title('Epsilon-Greedy: Cumulative Reward (Log Scale)')
-        axes[0, 1].set_xlabel('Trials')
-        axes[0, 1].set_ylabel('Cumulative Reward')
-        axes[0, 1].set_yscale('log')
-        axes[0, 1].grid(True)
+        # Epsilon-Greedy plots
+        for i, bandit in enumerate(self.eg_bandits):
+            if len(bandit.reward_history) > 0:
+                rewards = np.array(bandit.reward_history)
+                cumulative_avg = np.cumsum(rewards) / (np.arange(len(rewards)) + 1)
+                
+                # Linear scale
+                axes[0, 0].plot(cumulative_avg, label=f'Arm {i+1} (μ={bandit.m})', alpha=0.8)
+                # Log scale
+                axes[0, 1].plot(cumulative_avg, label=f'Arm {i+1} (μ={bandit.m})', alpha=0.8)
         
-        # Thompson Sampling Linear
-        axes[1, 0].plot(np.cumsum(self.ts.rewards))
-        axes[1, 0].set_title('Thompson Sampling: Cumulative Reward (Linear)')
-        axes[1, 0].set_xlabel('Trials')
-        axes[1, 0].set_ylabel('Cumulative Reward')
-        axes[1, 0].grid(True)
+        axes[0, 0].set_xlabel('Pull Number')
+        axes[0, 0].set_ylabel('Average Reward')
+        axes[0, 0].set_title('Epsilon-Greedy - Average Reward per Arm (Linear Scale)')
+        axes[0, 0].legend()
+        axes[0, 0].grid(True, alpha=0.3)
         
-        # Thompson Sampling Log
-        axes[1, 1].plot(np.cumsum(self.ts.rewards))
-        axes[1, 1].set_title('Thompson Sampling: Cumulative Reward (Log Scale)')
-        axes[1, 1].set_xlabel('Trials')
-        axes[1, 1].set_ylabel('Cumulative Reward')
-        axes[1, 1].set_yscale('log')
-        axes[1, 1].grid(True)
+        axes[0, 1].set_xlabel('Pull Number')
+        axes[0, 1].set_ylabel('Average Reward')
+        axes[0, 1].set_title('Epsilon-Greedy - Average Reward per Arm (Log Scale)')
+        axes[0, 1].set_xscale('log')
+        axes[0, 1].legend()
+        axes[0, 1].grid(True, alpha=0.3)
+        
+        # Thompson Sampling plots
+        for i, bandit in enumerate(self.ts_bandits):
+            if len(bandit.reward_history) > 0:
+                rewards = np.array(bandit.reward_history)
+                cumulative_avg = np.cumsum(rewards) / (np.arange(len(rewards)) + 1)
+                
+                # Linear scale
+                axes[1, 0].plot(cumulative_avg, label=f'Arm {i+1} (μ={bandit.true_mean})', alpha=0.8)
+                # Log scale
+                axes[1, 1].plot(cumulative_avg, label=f'Arm {i+1} (μ={bandit.true_mean})', alpha=0.8)
+        
+        axes[1, 0].set_xlabel('Pull Number')
+        axes[1, 0].set_ylabel('Average Reward')
+        axes[1, 0].set_title('Thompson Sampling - Average Reward per Arm (Linear Scale)')
+        axes[1, 0].legend()
+        axes[1, 0].grid(True, alpha=0.3)
+        
+        axes[1, 1].set_xlabel('Pull Number')
+        axes[1, 1].set_ylabel('Average Reward')
+        axes[1, 1].set_title('Thompson Sampling - Average Reward per Arm (Log Scale)')
+        axes[1, 1].set_xscale('log')
+        axes[1, 1].legend()
+        axes[1, 1].grid(True, alpha=0.3)
         
         plt.tight_layout()
         plt.savefig('Visualisations/bandit_performance.png', dpi=300, bbox_inches='tight')
-        logger.info("Plot 1 saved as 'bandit_performance.png'")
-        plt.show()
+        plt.close()
+        logger.info("Performance plot saved to 'Visualisations/bandit_performance.png'")
     
     def plot2(self):
-        """Compare E-greedy and Thompson sampling cumulative rewards and regrets"""
-        fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+        """
+        Compare Epsilon-Greedy and Thompson Sampling side-by-side.
         
-        # Cumulative Rewards Comparison
-        axes[0].plot(np.cumsum(self.eg.rewards), label='Epsilon-Greedy', alpha=0.8)
-        axes[0].plot(np.cumsum(self.ts.rewards), label='Thompson Sampling', alpha=0.8)
-        axes[0].set_title('Cumulative Rewards Comparison')
-        axes[0].set_xlabel('Trials')
-        axes[0].set_ylabel('Cumulative Reward')
-        axes[0].legend()
-        axes[0].grid(True)
+        Creates a 1x2 plot showing:
+        - Left: Cumulative rewards comparison between both algorithms
+        - Right: Cumulative regrets comparison between both algorithms
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
         
-        # Cumulative Regrets Comparison
-        eg_regret = np.array([self.eg.optimal_reward - r for r in self.eg.rewards])
-        ts_regret = np.array([self.ts.optimal_reward - r for r in self.ts.rewards])
+        # Calculate cumulative rewards
+        eg_cumulative_rewards = np.cumsum(self.eg_rewards)
+        ts_cumulative_rewards = np.cumsum(self.ts_rewards)
         
-        axes[1].plot(np.cumsum(eg_regret), label='Epsilon-Greedy', alpha=0.8)
-        axes[1].plot(np.cumsum(ts_regret), label='Thompson Sampling', alpha=0.8)
-        axes[1].set_title('Cumulative Regrets Comparison')
-        axes[1].set_xlabel('Trials')
-        axes[1].set_ylabel('Cumulative Regret')
-        axes[1].legend()
-        axes[1].grid(True)
+        # Plot cumulative rewards
+        ax1.plot(eg_cumulative_rewards, label='Epsilon-Greedy', alpha=0.8, color='blue')
+        ax1.plot(ts_cumulative_rewards, label='Thompson Sampling', alpha=0.8, color='green')
+        ax1.set_xlabel('Trial Number')
+        ax1.set_ylabel('Cumulative Reward')
+        ax1.set_title('Cumulative Rewards Comparison')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        
+        # Calculate cumulative regrets
+        eg_regrets = np.array([self.eg_optimal - r for r in self.eg_rewards])
+        ts_regrets = np.array([self.ts_optimal - r for r in self.ts_rewards])
+        eg_cumulative_regrets = np.cumsum(eg_regrets)
+        ts_cumulative_regrets = np.cumsum(ts_regrets)
+        
+        # Plot cumulative regrets
+        ax2.plot(eg_cumulative_regrets, label='Epsilon-Greedy', alpha=0.8, color='blue')
+        ax2.plot(ts_cumulative_regrets, label='Thompson Sampling', alpha=0.8, color='green')
+        ax2.set_xlabel('Trial Number')
+        ax2.set_ylabel('Cumulative Regret')
+        ax2.set_title('Cumulative Regrets Comparison')
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
         plt.savefig('Visualisations/algorithms_comparison.png', dpi=300, bbox_inches='tight')
-        logger.info("Plot 2 saved as 'algorithms_comparison.png'")
-        plt.show()
+        plt.close()
+        logger.info("Comparison plot saved to 'Visualisations/algorithms_comparison.png'")
 
 #--------------------------------------#
 class EpsilonGreedy(Bandit):
-    """Individual Bandit Arm for Epsilon-Greedy algorithm"""
+    """
+    Epsilon-Greedy bandit algorithm implementation for Gaussian rewards.
+    """
     
     def __init__(self, m):
-        """
-        Initialize a single bandit arm
-        p: true win rate/probability for this arm
-        """
         self.m = m
         self.m_estimate = 0
         self.N = 0
+        self.reward_history = []  # Track rewards for this specific arm
     
     def __repr__(self):
         return f'An Arm with {self.m} Win Rate'
     
     def pull(self):
-        """Pull this arm and return reward"""
-        return np.random.randn() + self.m
+        reward = np.random.randn() + self.m
+        self.reward_history.append(reward)  # Store reward for this arm
+        return reward
     
     def update(self, x):
-        """Update the estimate for this arm based on observed reward x
-
-        Args:
-          x: 
-
-        Returns:
-
-        """
         self.N += 1
         self.m_estimate = ((self.N - 1) * self.m_estimate + x) / self.N
     
     def experiment(self, num_trials=20000, bandits=None, initial_epsilon=1.0):
-        """Run the epsilon-greedy experiment with multiple bandits
-        This method should be called on one bandit instance but manages all bandits
-
-        Args:
-          num_trials:  (Default value = 20000)
-          bandits:  (Default value = None)
-          initial_epsilon:  (Default value = 1.0)
-
-        Returns:
-
-        """
         if bandits is None:
             logger.error("Must provide list of bandits for experiment")
             return
@@ -176,29 +208,21 @@ class EpsilonGreedy(Bandit):
         logger.info(f"Optimal bandit: {optimal_j} with reward {optimal_reward}")
         
         for i in range(num_trials):
-            # Decay epsilon by 1/t
             eps = initial_epsilon / (i + 1)
             
             if np.random.random() < eps:
-                # Explore
                 num_times_explored += 1
                 j = np.random.randint(len(bandits))
             else:
-                # Exploit
                 num_times_exploited += 1
                 j = np.argmax([b.m_estimate for b in bandits])
             
             if j == optimal_j:
                 num_optimal += 1
             
-            # Pull the arm for the bandit with the largest sample
             x = bandits[j].pull()
-            
-            # Update rewards log
             rewards[i] = x
             bandit_selections.append(j)
-            
-            # Update the distribution for the bandit whose arm we just pulled
             bandits[j].update(x)
             
             if i % 5000 == 0 and i > 0:
@@ -210,7 +234,6 @@ class EpsilonGreedy(Bandit):
         logger.info(f"Times exploited: {num_times_exploited}")
         logger.info(f"Times optimal: {num_optimal}")
         
-        # Store results in the bandit instance for reporting
         self.rewards = rewards
         self.bandit_selections = bandit_selections
         self.num_times_explored = num_times_explored
@@ -222,7 +245,6 @@ class EpsilonGreedy(Bandit):
         return bandits, rewards, num_times_explored, num_times_exploited, num_optimal
     
     def report(self):
-        """Generate report with statistics and save to CSV"""
         if not hasattr(self, 'rewards'):
             logger.error("No experiment data to report. Run experiment() first.")
             return
@@ -230,10 +252,9 @@ class EpsilonGreedy(Bandit):
         total_reward = np.sum(self.rewards)
         avg_reward = np.mean(self.rewards)
         
-        # Calculate regret
         regret_per_trial = np.array([self.optimal_reward - r for r in self.rewards])
         total_regret = np.sum(regret_per_trial)
-        avg_regret = np.mean(regret_per_trial)  # it has length = num_trials, thus np.mean() will work as expected
+        avg_regret = np.mean(regret_per_trial)
         
         logger.info(f"{'='*60}")
         logger.info(f"EPSILON-GREEDY REPORT")
@@ -246,75 +267,53 @@ class EpsilonGreedy(Bandit):
         logger.info(f"\nExploration/Exploitation Statistics:")
         logger.info(f" # of Explored: {self.num_times_explored}")
         logger.info(f" # of Exploited: {self.num_times_exploited}")
-        logger.info(f" # of times selected the optimal bandit: {self.num_optimal})")
+        logger.info(f" # of times selected the optimal bandit: {self.num_optimal}")
         logger.info(f"\nArm Statistics:")
         for i, b in enumerate(self.bandits):
-            logger.info(f"  {b} -> Estimated: {b.m_estimate:.4f}, Pulls: {b.N}")
+            logger.info(f"  Arm {i}: {b} -> Estimated: {b.m_estimate:.4f}, Pulls: {b.N}")
         logger.info(f"{'='*60}")
         
-        # Save to CSV
         df = pd.DataFrame({
             'Bandit': self.bandit_selections,
             'Reward': self.rewards,
             'Algorithm': 'EpsilonGreedy'
         })
         df.to_csv('Datasets/epsilon_greedy_results.csv', index=False)
-        logger.info("Results saved to 'epsilon_greedy_results.csv'")
+        logger.info("Results saved to 'Datasets/epsilon_greedy_results.csv'")
 
 #--------------------------------------#
 class ThompsonSampling(Bandit):
-    """Individual Bandit Arm for Thompson Sampling algorithm"""
+    """
+    Thompson Sampling (Bayesian) bandit algorithm for Gaussian rewards.
+    """
     
     def __init__(self, p):
-        """
-        Initialize a single bandit arm for Gaussian Thompson Sampling
-        p: true mean reward (μ) for this arm
-        Prior: N(0, 1)
-        Known precision τ = 1
-        """
         self.true_mean = p
         self.m = 0 
         self.lambda_ = 1 
         self.tau = 1 
         self.N = 0
         self.sum_x = 0
+        self.reward_history = []  # Track rewards for this specific arm
     
     def __repr__(self):
         return f'An Arm with true_mean={self.true_mean}'
     
     def pull(self):
-        """Pull this arm and return reward from N(true_mean, 1/τ)"""
-        return np.random.randn() / np.sqrt(self.tau) + self.true_mean
+        reward = np.random.randn() / np.sqrt(self.tau) + self.true_mean
+        self.reward_history.append(reward)  # Store reward for this arm
+        return reward
     
     def sample(self):
-        """Sample from the posterior distribution N(m, 1/λ)"""
         return np.random.randn() / np.sqrt(self.lambda_) + self.m
     
     def update(self, x):
-        """Update the Gaussian posterior parameters based on observed reward x
-
-        Args:
-          x: 
-
-        Returns:
-
-        """
         self.lambda_ += self.tau
         self.sum_x += x
         self.m = (self.tau * self.sum_x) / self.lambda_
         self.N += 1
     
     def experiment(self, num_trials=20000, bandits=None):
-        """Run the Thompson Sampling experiment with multiple bandits
-        This method should be called on one bandit instance but manages all bandits
-
-        Args:
-          num_trials:  (Default value = 20000)
-          bandits:  (Default value = None)
-
-        Returns:
-
-        """
         if bandits is None:
             logger.error("Must provide list of bandits for experiment")
             return
@@ -336,7 +335,6 @@ class ThompsonSampling(Bandit):
                 num_optimal += 1
             
             x = bandits[j].pull()
-            
             bandits[j].update(x)
             
             rewards[i] = x
@@ -352,16 +350,6 @@ class ThompsonSampling(Bandit):
         return bandits, rewards, num_optimal
     
     def report(self, bandits, rewards, num_optimal):
-        """
-
-        Args:
-          bandits: 
-          rewards: 
-          num_optimal: 
-
-        Returns:
-
-        """
         optimal_reward = max([b.true_mean for b in bandits])
         
         total_reward = np.sum(rewards)
@@ -383,31 +371,24 @@ class ThompsonSampling(Bandit):
         logger.info(f"  Times Optimal Selected: {num_optimal} ({100*num_optimal/len(rewards):.2f}%)")
         logger.info(f"\nArm Statistics:")
         for i, b in enumerate(bandits):
-            logger.info(f"  {b} -> Posterior Mean (m): {b.m:.4f}, Posterior Precision (λ): {b.lambda_:.4f}, Pulls: {b.N}")
+            logger.info(f"  Arm {i}: {b} -> Posterior Mean (m): {b.m:.4f}, "
+                       f"Posterior Precision (λ): {b.lambda_:.4f}, Pulls: {b.N}")
         logger.info(f"{'='*60}")
         
-        # Save to CSV
         df = pd.DataFrame({
             'Trial': range(len(rewards)),
             'Reward': rewards,
             'Algorithm': 'ThompsonSampling'
         })
         df.to_csv('Datasets/thompson_sampling_results.csv', index=False)
-        logger.info("Results saved to 'thompson_sampling_results.csv'")
+        logger.info("Results saved to 'Datasets/thompson_sampling_results.csv'")
         
-        # Store for visualization
         self.rewards = rewards
         self.optimal_reward = optimal_reward
 
-def comparison(eg_bandit, ts_bandit):
-    """Compare the performances of the two algorithms visually
-
-    Args:
-      eg_bandit: 
-      ts_bandit: 
-
-    Returns:
-
+def comparison(eg_bandits, ts_bandits, eg_rewards, ts_rewards):
+    """
+    Compare performance of Epsilon-Greedy and Thompson Sampling algorithms.
     """
     logger.info("Generating comparison visualizations...")
     
@@ -415,16 +396,19 @@ def comparison(eg_bandit, ts_bandit):
     df_ts = pd.read_csv('Datasets/thompson_sampling_results.csv')
     df_combined = pd.concat([df_eg, df_ts], ignore_index=True)
     df_combined.to_csv('Datasets/combined_results.csv', index=False)
-    logger.info("Combined results saved to 'combined_results.csv'")
+    logger.info("Combined results saved to 'Datasets/combined_results.csv'")
     
-    viz = Visualization(eg_bandit, ts_bandit)
+    viz = Visualization(eg_bandits, ts_bandits, eg_rewards, ts_rewards)
     viz.plot1()
     viz.plot2()
     
-    eg_total = np.sum(eg_bandit.rewards)
-    ts_total = np.sum(ts_bandit.rewards)
-    eg_regret = np.sum([eg_bandit.optimal_reward - r for r in eg_bandit.rewards])
-    ts_regret = np.sum([ts_bandit.optimal_reward - r for r in ts_bandit.rewards])
+    eg_optimal = max([b.m for b in eg_bandits])
+    ts_optimal = max([b.true_mean for b in ts_bandits])
+    
+    eg_total = np.sum(eg_rewards)
+    ts_total = np.sum(ts_rewards)
+    eg_regret = np.sum([eg_optimal - r for r in eg_rewards])
+    ts_regret = np.sum([ts_optimal - r for r in ts_rewards])
     
     logger.info(f"\n{'='*60}")
     logger.info(f"ALGORITHM COMPARISON")
@@ -442,12 +426,6 @@ def comparison(eg_bandit, ts_bandit):
 if __name__=='__main__':
     np.random.seed(42)
     
-    logger.debug("Debug message - detailed diagnostic information")
-    logger.info("Info message - general information about program execution")
-    logger.warning("Warning message - something unexpected happened")
-    logger.error("Error message - a serious problem occurred")
-    logger.critical("Critical message - program may not be able to continue")
-    
     logger.info("\n" + "="*60)
     logger.info("MULTI-ARMED BANDIT EXPERIMENT")
     logger.info("="*60 + "\n")
@@ -461,24 +439,22 @@ if __name__=='__main__':
     logger.info("="*60)
     logger.info("Creating Epsilon-Greedy Bandits...")
     eg_bandits = [EpsilonGreedy(m) for m in Bandit_Reward]
-    for i, b in enumerate(eg_bandits):
-        logger.debug(f"Bandit {i}: {b}")
     
-    eg_bandits[0].experiment(num_trials=NumberOfTrials, bandits=eg_bandits, initial_epsilon=1.0)
+    eg_bandits_result, eg_rewards, _, _, _ = eg_bandits[0].experiment(
+        num_trials=NumberOfTrials, bandits=eg_bandits, initial_epsilon=1.0
+    )
     eg_bandits[0].report()
     
     logger.info("\n" + "="*60)
     logger.info("Creating Thompson Sampling Bandits...")
     ts_bandits = [ThompsonSampling(p) for p in Bandit_Reward]
-    for i, b in enumerate(ts_bandits):
-        logger.debug(f"Bandit {i}: {b}")
     
-    bandits_ts, rewards_ts, optimal_ts = ts_bandits[0].experiment(
+    ts_bandits_result, ts_rewards, ts_optimal = ts_bandits[0].experiment(
         num_trials=NumberOfTrials, bandits=ts_bandits
     )
-    ts_bandits[0].report(bandits_ts, rewards_ts, optimal_ts)
+    ts_bandits[0].report(ts_bandits_result, ts_rewards, ts_optimal)
     
     logger.info("\n" + "="*60)
-    comparison(eg_bandits[0], ts_bandits[0])
+    comparison(eg_bandits_result, ts_bandits_result, eg_rewards, ts_rewards)
     
     logger.info("\nExperiment completed successfully!")
