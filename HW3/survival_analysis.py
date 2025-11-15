@@ -4,6 +4,7 @@ Author: Viktoria Melkumyan
 """
 
 import os
+import itertools
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,33 +47,22 @@ class ChurnSurvivalAnalysis:
 
     def prepare_data(self):
         """Prepare data for survival analysis"""
-        print("="*70)
         print("DATA PREPARATION")
-        print("="*70)
         print(self.data.head(2))
-
-        # Map binary columns
         binary_cols = ['churn', 'retire', 'voice', 'internet', 'forward']
         for col in binary_cols:
             if col in self.data.columns:
                 self.data[col] = self.data[col].map({'Yes': 1, 'No': 0}).astype(int)
-
-        # Handle missing numeric values
         numeric_cols = self.data.select_dtypes(include=[np.number]).columns
         self.data[numeric_cols] = self.data[numeric_cols].fillna(self.data[numeric_cols].median())
-
-        # One-hot encode categorical variables
         cat_cols = self.data.select_dtypes(include=['object']).columns.tolist()
         self.data_encoded = pd.get_dummies(self.data, columns=cat_cols, drop_first=True, dtype=int)
-
-        print("\n✓ Data preparation complete!")
+        print("\nData preparation complete!")
         return self.data_encoded
 
     def exploratory_analysis(self):
         """Perform EDA with histograms, boxplots, correlation, and churn rates"""
-        print("\n" + "="*70)
         print("EXPLORATORY DATA ANALYSIS")
-        print("="*70)
 
         fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 
@@ -84,19 +74,16 @@ class ChurnSurvivalAnalysis:
         axes[0, 0].set_ylabel('Frequency')
         axes[0, 0].set_title('Tenure Distribution by Churn')
         axes[0, 0].legend()
-
         # Income by churn
         axes[0, 1].boxplot([retained, churned], labels=['Retained','Churned'])
         axes[0, 1].set_title('Tenure Distribution by Churn')
         axes[0, 1].set_ylabel('Tenure')
-
         # Age by churn
         age_retained = self.data[self.data['churn'] == 0]['age']
         age_churned = self.data[self.data['churn'] == 1]['age']
         axes[0, 2].boxplot([age_retained, age_churned], labels=['Retained','Churned'])
         axes[0, 2].set_title('Age Distribution by Churn')
         axes[0, 2].set_ylabel('Age')
-
         # Churn rate by custcat
         churn_by_custcat = pd.crosstab(self.original_data['custcat'], self.original_data['churn'], normalize='index') * 100
         if 'Yes' in churn_by_custcat.columns:
@@ -105,7 +92,6 @@ class ChurnSurvivalAnalysis:
         axes[1,0].set_xlabel('Customer Category')
         axes[1,0].set_ylabel('Churn Rate (%)')
         axes[1,0].tick_params(axis='x', rotation=45)
-
         # Churn rate by region
         churn_by_region = pd.crosstab(self.original_data['region'], self.original_data['churn'], normalize='index')*100
         if 'Yes' in churn_by_region.columns:
@@ -114,7 +100,6 @@ class ChurnSurvivalAnalysis:
         axes[1,1].set_xlabel('Region')
         axes[1,1].set_ylabel('Churn Rate (%)')
         axes[1,1].tick_params(axis='x', rotation=45)
-
         # Correlation
         numeric_cols = ['tenure', 'age', 'address', 'income', 'churn']
         corr = self.data[numeric_cols].corr()
@@ -128,9 +113,7 @@ class ChurnSurvivalAnalysis:
 
     def build_aft_models(self):
         """Fit univariate and regression survival models"""
-        print("\n" + "="*70)
         print("BUILDING SURVIVAL MODELS")
-        print("="*70)
 
         breakpoints = list(range(12, 121, 12))
         knot_locations = list(np.quantile(self.data_encoded['tenure'], [0.25,0.5,0.75]))
@@ -189,9 +172,7 @@ class ChurnSurvivalAnalysis:
 
     def compare_models(self):
         """Compare all fitted models and rank them"""
-        print("\n" + "="*70)
         print("MODEL COMPARISON")
-        print("="*70)
 
         comparison_data = []
         for name, info in self.models.items():
@@ -213,20 +194,11 @@ class ChurnSurvivalAnalysis:
         return best_model
     def visualize_survival_curves(self):
         """Visualize survival curves for all models with median profile"""
-        print("\n" + "="*70)
         print("GENERATING SURVIVAL CURVES")
-        print("="*70)
 
         fig, ax = plt.subplots(figsize=(12, 7))
-
-        # Time points for prediction
         times = np.linspace(0, self.data['tenure'].max(), 100)
-
-        # Median customer profile
         median_profile = self.data_encoded.median().to_frame().T
-
-        # Color palette (repeats if more than 10 models)
-        import itertools
         colors = itertools.cycle([
             '#e74c3c', '#3498db', '#2ecc71', '#f39c12', 
             '#9b59b6', '#1abc9c', '#95a5a6', '#e67e22', 
@@ -270,9 +242,7 @@ class ChurnSurvivalAnalysis:
 
     def visualize_all_survival_curves(self, horizon_months=120):
         """Plot survival curves of all fitted models on a single graph"""
-        print("\n" + "="*70)
         print("VISUALIZING ALL SURVIVAL CURVES")
-        print("="*70)
 
         times = np.arange(1, horizon_months + 1)
         plt.figure(figsize=(12,8))
@@ -281,7 +251,6 @@ class ChurnSurvivalAnalysis:
             model = info['model']
             try:
                 if hasattr(model, 'predict_survival_function'):
-                    # Use final_data if regression, else raw tenure
                     data_for_pred = self.final_data if 'AFT' in name or 'Cox' in name else self.data_encoded
                     if 'AalenJohansen' in name:
                         surv_func = model.cumulative_density_
@@ -301,14 +270,12 @@ class ChurnSurvivalAnalysis:
         plt.grid(True)
         plt.tight_layout()
         plt.savefig('outputs/all_survival_curves.png', dpi=300, bbox_inches='tight')
-        print("✓ All survival curves saved: outputs/all_survival_curves.png")
+        print("All survival curves saved: outputs/all_survival_curves.png")
         plt.show()
 
     def select_final_model(self, best_model_name):
         """Refit best model on significant features"""
-        print("\n" + "="*70)
         print("FINAL MODEL SELECTION & FEATURE SELECTION")
-        print("="*70)
 
         if best_model_name not in self.models:
             raise ValueError(f"{best_model_name} not found")
@@ -316,7 +283,6 @@ class ChurnSurvivalAnalysis:
         model_class = self.models[best_model_name]['model'].__class__()
         model_class.fit(self.data_encoded, duration_col='tenure', event_col='churn')
 
-        # Extract significant features
         significant_features = []
         if hasattr(model_class, 'summary') and model_class.summary is not None:
             df_summary = model_class.summary
@@ -327,15 +293,14 @@ class ChurnSurvivalAnalysis:
         self.final_data = self.data_encoded[cols_to_keep]
         self.final_model = model_class.__class__()
         self.final_model.fit(self.final_data, duration_col='tenure', event_col='churn')
-
+        coeffs = self.final_model.params_ 
+        print(coeffs)
         print(f"✓ Final model fitted with {len(cols_to_keep)} features")
         return self.final_model
 
     def calculate_clv(self, spend_share=0.02, margin=0.6, discount_rate=0.01, horizon_months=120):
         """Calculate per-customer CLV"""
-        print("\n" + "="*70)
         print("CALCULATING CUSTOMER LIFETIME VALUE (CLV)")
-        print("="*70)
 
         times = np.arange(1, horizon_months+1)
         clv_list = []
@@ -354,9 +319,7 @@ class ChurnSurvivalAnalysis:
 
     def segment_analysis(self):
         """Analyze CLV by income, age, and customer segment"""
-        print("\n" + "="*70)
         print("SEGMENT ANALYSIS")
-        print("="*70)
 
         df = self.data.copy()
         df['income_quartile'] = pd.qcut(df['income'],4,labels=['Q1','Q2','Q3','Q4'], duplicates='drop')
@@ -396,9 +359,7 @@ class ChurnSurvivalAnalysis:
 
     def retention_budget_analysis(self):
         """Estimate retention budget based on 1-year survival probability"""
-        print("\n" + "="*70)
         print("RETENTION BUDGET ANALYSIS")
-        print("="*70)
 
         one_year = np.array([12])
         at_risk = []
@@ -421,7 +382,7 @@ class ChurnSurvivalAnalysis:
             total_at_risk_clv = at_risk_df['CLV'].sum()
             retention_budget = total_at_risk_clv * 0.10
             at_risk_df.to_csv('outputs/at_risk_customers.csv', index=False)
-            print(f"✓ At-risk customers saved: outputs/at_risk_customers.csv")
+            print(f"At-risk customers saved: outputs/at_risk_customers.csv")
             print(f"Recommended retention budget: ${retention_budget:,.2f}")
         else:
             print("No at-risk customers identified.")
@@ -431,9 +392,7 @@ class ChurnSurvivalAnalysis:
 
 def main():
     """Run full analysis pipeline"""
-    print("\n" + "="*70)
     print("CUSTOMER CHURN SURVIVAL ANALYSIS")
-    print("="*70)
 
     analysis = ChurnSurvivalAnalysis('telco.csv')
     analysis.prepare_data()
@@ -447,7 +406,7 @@ def main():
     analysis.retention_budget_analysis()
 
     analysis.data.to_csv('outputs/customer_clv_results.csv', index=False)
-    print("✓ Final results saved: outputs/customer_clv_results.csv")
+    print("Final results saved: outputs/customer_clv_results.csv")
 
 
 if __name__ == "__main__":
