@@ -211,6 +211,98 @@ class ChurnSurvivalAnalysis:
         best_model = df.iloc[0]['Model']
         print(f"✓ Best model: {best_model}")
         return best_model
+    def visualize_survival_curves(self):
+        """Visualize survival curves for all models with median profile"""
+        print("\n" + "="*70)
+        print("GENERATING SURVIVAL CURVES")
+        print("="*70)
+
+        fig, ax = plt.subplots(figsize=(12, 7))
+
+        # Time points for prediction
+        times = np.linspace(0, self.data['tenure'].max(), 100)
+
+        # Median customer profile
+        median_profile = self.data_encoded.median().to_frame().T
+
+        # Color palette (repeats if more than 10 models)
+        import itertools
+        colors = itertools.cycle([
+            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', 
+            '#9b59b6', '#1abc9c', '#95a5a6', '#e67e22', 
+            '#34495e', '#2c3e50'
+        ])
+
+        for name, result in self.models.items():
+            model = result['model']
+
+            # Predict survival function (only for models with predict_survival_function)
+            if hasattr(model, 'predict_survival_function'):
+                try:
+                    surv_func = model.predict_survival_function(median_profile, times=times)
+                    # Get AIC or AIC_partial if available
+                    aic = result.get('AIC', np.nan)
+                    if np.isnan(aic) and hasattr(model, 'AIC_partial_'):
+                        aic = model.AIC_partial_
+
+                    ax.plot(
+                        times, 
+                        surv_func.values.flatten(), 
+                        label=f"{name}" + (f" (AIC: {aic:.0f})" if not np.isnan(aic) else ""), 
+                        linewidth=2.5, 
+                        color=next(colors), 
+                        alpha=0.8
+                    )
+                except Exception as e:
+                    print(f"  Could not plot {name}: {e}")
+
+        ax.set_xlabel('Tenure (Months)', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Survival Probability', fontsize=12, fontweight='bold')
+        ax.set_title('Survival Curves Comparison: All Models', fontsize=14, fontweight='bold', pad=20)
+        ax.legend(loc='best', fontsize=11, framealpha=0.9)
+        ax.grid(True, alpha=0.3)
+        ax.set_ylim([0, 1.05])
+
+        plt.tight_layout()
+        plt.savefig('outputs/survival_curves_comparison.png', dpi=300, bbox_inches='tight')
+        print("\n✓ Saved: outputs/survival_curves_comparison.png")
+        plt.close()
+
+    def visualize_all_survival_curves(self, horizon_months=120):
+        """Plot survival curves of all fitted models on a single graph"""
+        print("\n" + "="*70)
+        print("VISUALIZING ALL SURVIVAL CURVES")
+        print("="*70)
+
+        times = np.arange(1, horizon_months + 1)
+        plt.figure(figsize=(12,8))
+
+        for name, info in self.models.items():
+            model = info['model']
+            try:
+                if hasattr(model, 'predict_survival_function'):
+                    # Use final_data if regression, else raw tenure
+                    data_for_pred = self.final_data if 'AFT' in name or 'Cox' in name else self.data_encoded
+                    if 'AalenJohansen' in name:
+                        surv_func = model.cumulative_density_
+                        plt.step(surv_func.index, 1-surv_func.values, label=name)
+                    else:
+                        sf = model.predict_survival_function(data_for_pred.iloc[:5], times=times)
+                        plt.plot(times, sf.mean(axis=1), label=name)
+                else:
+                    continue
+            except Exception as e:
+                print(f"  Could not plot {name}: {e}")
+
+        plt.xlabel('Tenure (months)')
+        plt.ylabel('Survival Probability')
+        plt.title('Survival Curves for All Models')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig('outputs/all_survival_curves.png', dpi=300, bbox_inches='tight')
+        print("✓ All survival curves saved: outputs/all_survival_curves.png")
+        plt.show()
 
     def select_final_model(self, best_model_name):
         """Refit best model on significant features"""
@@ -349,6 +441,7 @@ def main():
     analysis.build_aft_models()
     best_model = analysis.compare_models()
     analysis.select_final_model(best_model)
+    analysis.visualize_survival_curves()
     analysis.calculate_clv()
     analysis.segment_analysis()
     analysis.retention_budget_analysis()
